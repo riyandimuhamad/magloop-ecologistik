@@ -3,6 +3,7 @@ import '../../main.dart';
 import '../mitra/mitra_dashboard.dart';
 import '../driver/driver_dashboard.dart';
 import '../admin/admin_dashboard.dart';
+import '../mitra/mitra_history_screen.dart';
 import '../../core/theme/app_theme.dart';
 
 class RoleWrapper extends StatefulWidget {
@@ -46,7 +47,7 @@ class _RoleWrapperState extends State<RoleWrapper> {
           case AppRole.mitra:
             screens = [
               const MitraDashboard(), 
-              const Scaffold(body: Center(child: Text('Riwayat Setoran'))),
+              const MitraHistoryScreen(),
               profilePlaceholder
             ];
             navItems = const [

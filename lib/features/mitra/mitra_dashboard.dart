@@ -164,13 +164,44 @@ class MitraDashboard extends StatelessWidget {
   Widget _buildActionSection(BuildContext context) {
     return InkWell(
       onTap: () async {
-        await FirebaseService().createPickupRequest('Restoran Sedap', 'Jl. Merdeka No. 10');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Permintaan Penjemputan Berhasil Dikirim!'),
-            backgroundColor: AppColors.primary,
-          )
+        // Tampilkan Loading
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         );
+
+        try {
+          await FirebaseService().createPickupRequest('Restoran Sedap', 'Jl. Merdeka No. 10');
+          
+          if (context.mounted) {
+            Navigator.pop(context); // Tutup loading
+            
+            // Tampilkan Dialog Sukses
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                title: const Icon(Icons.check_circle_outline, color: AppColors.primary, size: 60),
+                content: const Text(
+                  'Permintaan Terkirim!\nDriver akan segera menjemput sampah Anda.',
+                  textAlign: TextAlign.center,
+                ),
+                actions: [
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Oke'),
+                    ),
+                  )
+                ],
+              ),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) Navigator.pop(context);
+          debugPrint('Error: $e');
+        }
       },
       borderRadius: BorderRadius.circular(20),
       child: Container(

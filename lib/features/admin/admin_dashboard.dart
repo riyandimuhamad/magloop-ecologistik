@@ -8,18 +8,79 @@ class AdminDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Magloop Control Center')),
-      body: SingleChildScrollView(
-        child: Column(
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Magloop Control Center'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Logistik'),
+              Tab(text: 'Ledger Koin'),
+            ],
+            indicatorColor: AppColors.primary,
+            labelColor: AppColors.primary,
+          ),
+        ),
+        body: TabBarView(
           children: [
-            _buildStatusList(context, 'Menunggu (Pending)', 'pending', Colors.orange),
-            _buildStatusList(context, 'Dalam Perjalanan (On Progress)', 'in_progress', Colors.blue),
-            _buildStatusList(context, 'Selesai (Completed)', 'completed', AppColors.primary),
+            _buildLogistikTab(context),
+            _buildLedgerTab(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildLogistikTab(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildStatusList(context, 'Menunggu (Pending)', 'pending', Colors.orange),
+          _buildStatusList(context, 'Dalam Perjalanan (On Progress)', 'in_progress', Colors.blue),
+          _buildStatusList(context, 'Selesai (Completed)', 'completed', AppColors.primary),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLedgerTab() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('ledger_transactions')
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(child: Text('Belum ada transaksi ledger.'));
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: snapshot.data!.docs.length,
+          itemBuilder: (context, index) {
+            final data = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+            final int reward = data['coinReward'] ?? 0;
+            final isRedeem = reward < 0;
+
+            return Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: isRedeem ? Colors.red[50] : AppColors.primarySurface,
+                  child: Icon(isRedeem ? Icons.remove_circle_outline : Icons.add_circle_outline, 
+                    color: isRedeem ? Colors.red : AppColors.primary),
+                ),
+                title: Text(isRedeem ? 'Penukaran Koin (Redeem)' : 'Reward Penjemputan'),
+                subtitle: Text('ID: ${data['partnerId'] ?? 'Demo-User'}'),
+                trailing: Text('${reward > 0 ? "+" : ""}$reward GC', 
+                  style: TextStyle(fontWeight: FontWeight.bold, color: isRedeem ? Colors.red : AppColors.primary)),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -54,7 +115,6 @@ class AdminDashboard extends StatelessWidget {
                   child: ListTile(
                     title: Text(data['partnerName'] ?? ''),
                     subtitle: Text('Status: $status'),
-                    trailing: Text(status == 'completed' ? 'Success' : '...', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
                   ),
                 );
               },
