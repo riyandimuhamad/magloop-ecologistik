@@ -3,18 +3,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/firebase_service.dart';
-import '../schedule/screens/scanner_screen.dart';
 
 class DriverDashboard extends StatelessWidget {
   const DriverDashboard({super.key});
 
-  // Fungsi untuk membuka Google Maps
   Future<void> _openMap(String location) async {
     final String googleMapsUrl = "https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(location)}";
-    if (await canLaunchUrl(Uri.parse(googleMapsUrl))) {
-      await launchUrl(Uri.parse(googleMapsUrl), mode: LaunchMode.externalApplication);
-    } else {
-      throw 'Could not open the map.';
+    final Uri url = Uri.parse(googleMapsUrl);
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      debugPrint('Maps Error: $e');
     }
   }
 
@@ -25,12 +26,6 @@ class DriverDashboard extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Driver Magloop')),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const VerificationScanner())),
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.qr_code_scanner_rounded),
-        label: const Text('Scan QR Verification'),
-      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -75,10 +70,12 @@ class DriverDashboard extends StatelessWidget {
   Widget _buildRequestCard(BuildContext context, String id, Map<String, dynamic> data, String status, String driverId) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ListTile(
         leading: Icon(status == 'pending' ? Icons.timer_outlined : Icons.local_shipping_rounded),
         title: Text(data['partnerName'] ?? 'Mitra'),
         subtitle: Text(data['location'] ?? ''),
+        trailing: const Icon(Icons.chevron_right),
         onTap: () => _showActionDialog(context, id, data, status, driverId),
       ),
     );
@@ -87,6 +84,7 @@ class DriverDashboard extends StatelessWidget {
   void _showActionDialog(BuildContext context, String id, Map<String, dynamic> data, String status, String driverId) {
     showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -102,28 +100,24 @@ class DriverDashboard extends StatelessWidget {
               height: 50,
               child: ElevatedButton(
                 onPressed: () async {
-                  // Simpan context sebelum async
                   final scaffoldMessenger = ScaffoldMessenger.of(context);
                   final nav = Navigator.of(context);
 
                   if (status == 'pending') {
                     await FirebaseService().acceptRequest(id, driverId);
-                    nav.pop(); // Tutup Popup
+                    nav.pop();
                     _openMap(data['location']);
-                    scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Order Diterima. Membuka Maps...')));
+                    scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Order Diterima.')));
                   } else {
                     await FirebaseService().completeRequest(id, 5.5, 'MITRA_01');
-                    nav.pop(); // Tutup Popup
+                    nav.pop();
                     scaffoldMessenger.showSnackBar(
-                      const SnackBar(
-                        content: Text('Tugas Selesai! Data terkirim ke Admin & Mitra.'),
-                        backgroundColor: AppColors.primary,
-                      )
+                      const SnackBar(content: Text('Tugas Selesai!'), backgroundColor: AppColors.primary)
                     );
                   }
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                child: Text(status == 'pending' ? 'ACC & Buka Rute Maps' : 'Konfirmasi Selesai'),
+                child: Text(status == 'pending' ? 'ACC & Buka Maps' : 'Konfirmasi Selesai'),
               ),
             ),
           ],
@@ -140,7 +134,7 @@ class DriverDashboard extends StatelessWidget {
           Icon(icon, color: AppColors.primary, size: 20),
           const SizedBox(width: 12),
           Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text(value),
+          Expanded(child: Text(value)),
         ],
       ),
     );
