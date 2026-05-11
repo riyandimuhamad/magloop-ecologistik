@@ -75,7 +75,6 @@ class DriverDashboard extends StatelessWidget {
         leading: Icon(status == 'pending' ? Icons.timer_outlined : Icons.local_shipping_rounded),
         title: Text(data['partnerName'] ?? 'Mitra'),
         subtitle: Text(data['location'] ?? ''),
-        trailing: const Icon(Icons.chevron_right),
         onTap: () => _showActionDialog(context, id, data, status, driverId),
       ),
     );
@@ -84,6 +83,7 @@ class DriverDashboard extends StatelessWidget {
   void _showActionDialog(BuildContext context, String id, Map<String, dynamic> data, String status, String driverId) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(24),
@@ -100,19 +100,19 @@ class DriverDashboard extends StatelessWidget {
               height: 50,
               child: ElevatedButton(
                 onPressed: () async {
+                  // TUTUP POPUP SEGERA
+                  Navigator.of(ctx).pop();
+                  
                   final scaffoldMessenger = ScaffoldMessenger.of(context);
-                  final nav = Navigator.of(context);
 
                   if (status == 'pending') {
                     await FirebaseService().acceptRequest(id, driverId);
-                    nav.pop();
                     _openMap(data['location']);
-                    scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Order Diterima.')));
+                    scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Order Diterima. Membuka Maps...')));
                   } else {
                     await FirebaseService().completeRequest(id, 5.5, 'MITRA_01');
-                    nav.pop();
                     scaffoldMessenger.showSnackBar(
-                      const SnackBar(content: Text('Tugas Selesai!'), backgroundColor: AppColors.primary)
+                      const SnackBar(content: Text('Tugas Selesai! Data Terkirim.'), backgroundColor: AppColors.primary)
                     );
                   }
                 },

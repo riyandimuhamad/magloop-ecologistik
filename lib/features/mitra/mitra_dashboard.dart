@@ -163,45 +163,35 @@ class MitraDashboard extends StatelessWidget {
 
   Widget _buildActionSection(BuildContext context) {
     return InkWell(
-      onTap: () async {
-        // Tampilkan Loading
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      onTap: () {
+        // Tampilkan feedback instan
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                SizedBox(width: 16),
+                Text('Mengirim permintaan...'),
+              ],
+            ),
+            duration: Duration(seconds: 1),
+          ),
         );
 
-        try {
-          await FirebaseService().createPickupRequest('Restoran Sedap', 'Jl. Merdeka No. 10');
-          
+        // Kirim ke Firebase di background (tanpa await yang menghambat UI)
+        FirebaseService().createPickupRequest('Restoran Sedap', 'Jl. Merdeka No. 10').then((_) {
           if (context.mounted) {
-            Navigator.pop(context); // Tutup loading
-            
-            // Tampilkan Dialog Sukses
             showDialog(
               context: context,
               builder: (ctx) => AlertDialog(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 title: const Icon(Icons.check_circle_outline, color: AppColors.primary, size: 60),
-                content: const Text(
-                  'Permintaan Terkirim!\nDriver akan segera menjemput sampah Anda.',
-                  textAlign: TextAlign.center,
-                ),
-                actions: [
-                  Center(
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Oke'),
-                    ),
-                  )
-                ],
+                content: const Text('Berhasil! Permintaan Anda sudah masuk antrian.', textAlign: TextAlign.center),
+                actions: [Center(child: TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Oke')))],
               ),
             );
           }
-        } catch (e) {
-          if (context.mounted) Navigator.pop(context);
-          debugPrint('Error: $e');
-        }
+        });
       },
       borderRadius: BorderRadius.circular(20),
       child: Container(
