@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/firebase_service.dart';
 import '../schedule/screens/scanner_screen.dart';
@@ -7,18 +8,23 @@ import '../schedule/screens/scanner_screen.dart';
 class DriverDashboard extends StatelessWidget {
   const DriverDashboard({super.key});
 
+  // Fungsi untuk membuka Google Maps
+  Future<void> _openMap(String location) async {
+    final String googleMapsUrl = "https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(location)}";
+    if (await canLaunchUrl(Uri.parse(googleMapsUrl))) {
+      await launchUrl(Uri.parse(googleMapsUrl), mode: LaunchMode.externalApplication);
+    } else {
+      throw 'Could not open the map.';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const String driverId = 'DRIVER_01';
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Driver Magloop'),
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: () {}),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Driver Magloop')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const VerificationScanner())),
         backgroundColor: AppColors.primary,
@@ -26,11 +32,9 @@ class DriverDashboard extends StatelessWidget {
         label: const Text('Scan QR Verification'),
       ),
       body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
         child: Column(
           children: [
             _buildSection(context, 'TUGAS BARU', 'pending', driverId, Colors.orange),
-            const Divider(height: 1),
             _buildSection(context, 'SEDANG BERJALAN', 'in_progress', driverId, AppColors.primary),
           ],
         ),
@@ -42,27 +46,18 @@ class DriverDashboard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-          color: accentColor.withOpacity(0.05),
-          child: Row(
-            children: [
-              Container(width: 4, height: 16, decoration: BoxDecoration(color: accentColor, borderRadius: BorderRadius.circular(2))),
-              const SizedBox(width: 8),
-              Text(title, style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, fontSize: 12, color: accentColor)),
-            ],
-          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+          child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: accentColor)),
         ),
         StreamBuilder<QuerySnapshot>(
           stream: FirebaseService().getRequestsByStatus(status),
           builder: (context, snapshot) {
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return _buildEmptyState(status == 'pending' ? 'Belum ada tugas baru' : 'Tidak ada tugas berjalan');
+              return const Padding(padding: EdgeInsets.all(20), child: Text('Tidak ada data'));
             }
             return ListView.builder(
               shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(vertical: 8),
               physics: const NeverScrollableScrollPhysics(),
               itemCount: snapshot.data!.docs.length,
               itemBuilder: (context, index) {
@@ -77,54 +72,13 @@ class DriverDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState(String message) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(Icons.inbox_rounded, size: 48, color: Colors.grey[300]),
-            const SizedBox(height: 12),
-            Text(message, style: TextStyle(color: Colors.grey[500], fontSize: 13, fontWeight: FontWeight.w500)),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildRequestCard(BuildContext context, String id, Map<String, dynamic> data, String status, String driverId) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: (status == 'pending' ? Colors.orange : AppColors.primary).withOpacity(0.1),
-          child: Icon(
-            status == 'pending' ? Icons.notifications_active_outlined : Icons.local_shipping_rounded,
-            color: status == 'pending' ? Colors.orange : AppColors.primary,
-            size: 20,
-          ),
-        ),
-        title: Text(data['partnerName'] ?? 'Mitra', style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(Icons.pin_drop_outlined, size: 14, color: Colors.grey),
-                const SizedBox(width: 4),
-                Expanded(child: Text(data['location'] ?? '', style: const TextStyle(fontSize: 12, color: Colors.grey))),
-              ],
-            ),
-          ],
-        ),
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
+        leading: Icon(status == 'pending' ? Icons.timer_outlined : Icons.local_shipping_rounded),
+        title: Text(data['partnerName'] ?? 'Mitra'),
+        subtitle: Text(data['location'] ?? ''),
         onTap: () => _showActionDialog(context, id, data, status, driverId),
       ),
     );
@@ -133,44 +87,43 @@ class DriverDashboard extends StatelessWidget {
   void _showActionDialog(BuildContext context, String id, Map<String, dynamic> data, String status, String driverId) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        padding: const EdgeInsets.all(32),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+            Text('Detail Penjemputan', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 24),
-            Text(status == 'pending' ? 'Terima Penjemputan?' : 'Selesaikan Tugas?', 
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 24),
-            _buildDetailRow(Icons.storefront_rounded, 'Nama Mitra', data['partnerName']),
-            _buildDetailRow(Icons.location_on_rounded, 'Lokasi', data['location']),
+            _buildInfoRow(Icons.store, 'Mitra', data['partnerName']),
+            _buildInfoRow(Icons.pin_drop, 'Alamat', data['location']),
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
-              height: 56,
+              height: 50,
               child: ElevatedButton(
                 onPressed: () async {
+                  // Simpan context sebelum async
+                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+                  final nav = Navigator.of(context);
+
                   if (status == 'pending') {
                     await FirebaseService().acceptRequest(id, driverId);
-                    if (context.mounted) Navigator.pop(ctx);
+                    nav.pop(); // Tutup Popup
+                    _openMap(data['location']);
+                    scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Order Diterima. Membuka Maps...')));
                   } else {
                     await FirebaseService().completeRequest(id, 5.5, 'MITRA_01');
-                    if (context.mounted) Navigator.pop(ctx);
+                    nav.pop(); // Tutup Popup
+                    scaffoldMessenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('Tugas Selesai! Data terkirim ke Admin & Mitra.'),
+                        backgroundColor: AppColors.primary,
+                      )
+                    );
                   }
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 0,
-                ),
-                child: Text(status == 'pending' ? 'ACC & Buka Rute' : 'Konfirmasi Selesai', 
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                child: Text(status == 'pending' ? 'ACC & Buka Rute Maps' : 'Konfirmasi Selesai'),
               ),
             ),
           ],
@@ -179,20 +132,15 @@ class DriverDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppColors.primary),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
-            ],
-          ),
+          Icon(icon, color: AppColors.primary, size: 20),
+          const SizedBox(width: 12),
+          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(value),
         ],
       ),
     );
