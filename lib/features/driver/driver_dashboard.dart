@@ -2,85 +2,107 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/firebase_service.dart';
-import '../schedule/screens/scanner_screen.dart';
 
 class DriverDashboard extends StatelessWidget {
   const DriverDashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const String driverId = 'DRIVER_01'; // ID Driver saat ini
+    const String driverId = 'DRIVER_01';
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const VerificationScanner())),
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.qr_code_scanner_rounded),
-        label: const Text('Verifikasi Berat'),
-      ),
-      body: CustomScrollView(
-        slivers: [
-          _buildAppBar(context),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Text('Tugas Penjemputan Anda:', style: Theme.of(context).textTheme.titleSmall),
-            ),
-          ),
-          _buildTaskList(driverId),
-        ],
+      appBar: AppBar(title: const Text('Driver Magloop')),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildSection(context, 'Tugas Baru (Pending)', 'pending', driverId),
+            _buildSection(context, 'Sedang Berjalan (OTW)', 'in_progress', driverId),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildAppBar(BuildContext context) {
-    return SliverAppBar(
-      pinned: true,
-      backgroundColor: AppColors.surface,
-      title: const Text('Driver Magloop', style: TextStyle(color: AppColors.textPrimary)),
-      actions: [
-        IconButton(icon: const Icon(Icons.map_rounded, color: AppColors.primary), onPressed: () {}),
+  Widget _buildSection(BuildContext context, String title, String status, String driverId) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+          child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        ),
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseService().getRequestsByStatus(status),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return const Padding(padding: EdgeInsets.all(20), child: Text('Kosong'));
+            }
+            return ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: snapshot.data!.docs.length,
+              itemBuilder: (context, index) {
+                final doc = snapshot.data!.docs[index];
+                final data = doc.data() as Map<String, dynamic>;
+                return _buildRequestCard(context, doc.id, data, status, driverId);
+              },
+            );
+          },
+        ),
       ],
     );
   }
 
-  Widget _buildTaskList(String driverId) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('pickup_requests')
-          .where('assignedDriver', isEqualTo: driverId)
-          .where('status', isEqualTo: 'assigned')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const SliverFillRemaining(
-            child: Center(child: Text('Belum ada tugas penjemputan.')),
-          );
-        }
+  Widget _buildRequestCard(BuildContext context, String id, Map<String, dynamic> data, String status, String driverId) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: ListTile(
+        leading: Icon(
+          status == 'pending' ? Icons.timer_outlined : Icons.local_shipping_rounded,
+          color: status == 'pending' ? Colors.orange : AppColors.primary,
+        ),
+        title: Text(data['partnerName'] ?? 'Mitra'),
+        subtitle: Text(data['location'] ?? ''),
+        onTap: () => _showActionDialog(context, id, data, status, driverId),
+      ),
+    );
+  }
 
-        return SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final doc = snapshot.data!.docs[index];
-              final data = doc.data() as Map<String, dynamic>;
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Card(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: ListTile(
-                    leading: const Icon(Icons.location_on_rounded, color: Colors.redAccent),
-                    title: Text(data['partnerName'] ?? 'Mitra'),
-                    subtitle: Text(data['location'] ?? ''),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                  ),
-                ),
-              );
-            },
-            childCount: snapshot.data!.docs.length,
-          ),
-        );
-      },
+  void _showActionDialog(BuildContext context, String id, Map<String, dynamic> data, String status, String driverId) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Rincian Tugas', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
+            ListTile(leading: const Icon(Icons.store), title: Text(data['partnerName'])),
+            ListTile(leading: const Icon(Icons.pin_drop), title: Text(data['location'])),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  if (status == 'pending') {
+                    await FirebaseService().acceptRequest(id, driverId);
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Anda Sedang OTW! Mitra telah dinotifikasi.')));
+                  } else {
+                    await FirebaseService().completeRequest(id, 5.5, 'MITRA_01'); // Mock weight
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tugas Selesai! GreenCoin telah dikirim ke Mitra.')));
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                child: Text(status == 'pending' ? 'ACC & Buka Maps' : 'Konfirmasi Sampai di Peternakan'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

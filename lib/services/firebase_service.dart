@@ -8,49 +8,56 @@ class FirebaseService {
   factory FirebaseService() => _instance;
   FirebaseService._internal();
 
-  // ─── ALUR PENJEMPUTAN (AUDIT FIX) ───
-  
-  // 1. Mitra buat permintaan
+  // 1. Mitra Request
   Future<void> createPickupRequest(String partnerName, String location) async {
     await _db.collection('pickup_requests').add({
       'partnerName': partnerName,
       'location': location,
-      'status': 'pending', // pending -> assigned -> completed
+      'status': 'pending',
       'timestamp': FieldValue.serverTimestamp(),
-      'coordinates': const GeoPoint(-6.175392, 106.827153), // Mock Jakarta Pusat
     });
   }
 
-  // 2. Admin lihat antrian permintaan
-  Stream<QuerySnapshot> getPendingRequests() {
-    return _db.collection('pickup_requests')
-        .where('status', isEqualTo: 'pending')
-        .snapshots();
-  }
-
-  // 3. Admin tugaskan Driver (Mock Logic)
-  Future<void> assignDriver(String requestId, String driverId) async {
+  // 2. Driver ACC (Terima Order)
+  Future<void> acceptRequest(String requestId, String driverId) async {
     await _db.collection('pickup_requests').doc(requestId).update({
-      'status': 'assigned',
+      'status': 'in_progress',
       'assignedDriver': driverId,
+      'acceptedAt': FieldValue.serverTimestamp(),
     });
   }
 
-  // ─── BLOCKCHAIN LEDGER & COINS ───
-  
-  Future<void> recordTransaction({
-    required String partnerId,
-    required double weight,
-    required String type,
-  }) async {
+  // 3. Driver Finish (Sampai di Peternakan)
+  Future<void> completeRequest(String requestId, double weight, String partnerId) async {
     final coinReward = (weight * 10).toInt();
-    await _db.collection('ledger_transactions').add({
+    
+    // Gunakan WriteBatch agar transaksi aman (Atomic)
+    WriteBatch batch = _db.batch();
+
+    // Update status request
+    batch.update(_db.collection('pickup_requests').doc(requestId), {
+      'status': 'completed',
+      'finalWeight': weight,
+      'completedAt': FieldValue.serverTimestamp(),
+    });
+
+    // Tambah Koin ke Ledger
+    DocumentReference ledgerRef = _db.collection('ledger_transactions').doc();
+    batch.set(ledgerRef, {
       'timestamp': FieldValue.serverTimestamp(),
       'partnerId': partnerId,
-      'weight': weight,
       'coinReward': coinReward,
-      'status': 'verified',
+      'type': 'pickup_reward',
     });
+
+    await batch.commit();
+  }
+
+  // ─── STREAMS UNTUK UI ───
+  Stream<QuerySnapshot> getRequestsByStatus(String status) {
+    return _db.collection('pickup_requests')
+        .where('status', isEqualTo: status)
+        .snapshots();
   }
 
   Stream<int> getBalance() {
@@ -63,13 +70,11 @@ class FirebaseService {
     });
   }
 
-  // Penukaran Koin (Redeem)
   Future<void> redeemCoins(int amount) async {
     await _db.collection('ledger_transactions').add({
       'timestamp': FieldValue.serverTimestamp(),
-      'coinReward': -amount, // Mengurangi saldo
+      'coinReward': -amount,
       'type': 'redeem',
-      'status': 'processed',
     });
   }
 }

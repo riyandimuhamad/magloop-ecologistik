@@ -10,119 +10,58 @@ class AdminDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(context),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  _buildStatGrid(),
-                  const SizedBox(height: 32),
-                  _buildSectionTitle(context, 'Antrian Permintaan Baru'),
-                  _buildPendingRequests(),
-                ],
-              ),
-            ),
-          ),
-        ],
+      appBar: AppBar(title: const Text('Magloop Control Center')),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildStatusList(context, 'Menunggu (Pending)', 'pending', Colors.orange),
+            _buildStatusList(context, 'Dalam Perjalanan (On Progress)', 'in_progress', Colors.blue),
+            _buildStatusList(context, 'Selesai (Completed)', 'completed', AppColors.primary),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSliverAppBar(BuildContext context) {
-    return SliverAppBar(
-      pinned: true,
-      backgroundColor: AppColors.surface,
-      title: const Text('Admin Console', style: TextStyle(color: AppColors.textPrimary)),
-      actions: [
-        IconButton(icon: const Icon(Icons.notifications_none_rounded), onPressed: () {}),
-      ],
-    );
-  }
-
-  Widget _buildStatGrid() {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.5,
+  Widget _buildStatusList(BuildContext context, String title, String status, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildStatCard('Total Sampah', '5.2T', Icons.delete_sweep_rounded, Colors.blue),
-        _buildStatCard('Koin Beredar', '125K', Icons.eco_rounded, Colors.green),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 28),
-          Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
-          const Text('Lihat Semua', style: TextStyle(color: AppColors.primary, fontSize: 12)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPendingRequests() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseService().getPendingRequests(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Padding(
-            padding: EdgeInsets.all(20.0),
-            child: Text('Tidak ada permintaan pending.'),
-          ));
-        }
-
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: snapshot.data!.docs.length,
-          itemBuilder: (context, index) {
-            final doc = snapshot.data!.docs[index];
-            final data = doc.data() as Map<String, dynamic>;
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: ListTile(
-                leading: const CircleAvatar(backgroundColor: AppColors.primarySurface, child: Icon(Icons.storefront_rounded, color: AppColors.primary)),
-                title: Text(data['partnerName'] ?? 'Mitra'),
-                subtitle: Text(data['location'] ?? 'Lokasi tidak ada'),
-                trailing: ElevatedButton(
-                  onPressed: () => FirebaseService().assignDriver(doc.id, 'DRIVER_01'),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(horizontal: 12)),
-                  child: const Text('Assign', style: TextStyle(fontSize: 11)),
-                ),
-              ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+          child: Row(
+            children: [
+              Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              const SizedBox(width: 8),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseService().getRequestsByStatus(status),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return const Padding(padding: EdgeInsets.symmetric(horizontal: 40), child: Text('Tidak ada data', style: TextStyle(fontSize: 12, color: Colors.grey)));
+            }
+            return ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: snapshot.data!.docs.length,
+              itemBuilder: (context, index) {
+                final data = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  child: ListTile(
+                    title: Text(data['partnerName'] ?? ''),
+                    subtitle: Text('Status: $status'),
+                    trailing: Text(status == 'completed' ? 'Success' : '...', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+                  ),
+                );
+              },
             );
           },
-        );
-      },
+        ),
+      ],
     );
   }
 }
