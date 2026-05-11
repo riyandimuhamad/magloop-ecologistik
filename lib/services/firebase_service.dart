@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../core/config/app_config.dart';
 
 class FirebaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -29,7 +30,7 @@ class FirebaseService {
 
   // 3. Driver Finish (Sampai di Peternakan)
   Future<void> completeRequest(String requestId, double weight, String partnerId) async {
-    final coinReward = (weight * 10).toInt();
+    final coinReward = AppConfig.calculatePoints(weight);
     
     // Gunakan WriteBatch agar transaksi aman (Atomic)
     WriteBatch batch = _db.batch();

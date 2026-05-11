@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/firebase_service.dart';
 import '../../main.dart';
+import '../../core/config/app_config.dart';
 
 class MitraDashboard extends StatelessWidget {
   const MitraDashboard({super.key});
@@ -103,7 +104,7 @@ class MitraDashboard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Setara: Rp ${(balance * 100)}', 
+                  Text('Setara: Rp ${AppConfig.calculateRupiah(balance)}', 
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
                   ElevatedButton(
                     onPressed: () => _showRedeemDialog(context, balance),
