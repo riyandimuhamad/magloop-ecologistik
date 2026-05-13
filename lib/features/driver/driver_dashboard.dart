@@ -39,6 +39,7 @@ class DriverDashboard extends StatelessWidget {
             _buildDriverWallet(),
             _buildSection(context, 'TUGAS BARU', 'pending', driverId, Colors.orange),
             _buildSection(context, 'SEDANG BERJALAN', 'in_progress', driverId, AppColors.primary),
+            _buildSection(context, 'RIWAYAT SELESAI', 'completed', driverId, Colors.grey),
           ],
         ),
       ),
@@ -46,37 +47,43 @@ class DriverDashboard extends StatelessWidget {
   }
 
   Widget _buildDriverWallet() {
-    return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(20),
-        image: const DecorationImage(
-          image: NetworkImage('https://www.transparenttextures.com/patterns/carbon-fibre.png'),
-          opacity: 0.1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Saldo Penghasilan Driver', style: TextStyle(color: Colors.white70, fontSize: 12)),
-          const SizedBox(height: 8),
-          const Text('450 GC', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
-          const Divider(color: Colors.white24, height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return StreamBuilder<int>(
+      stream: FirebaseService().getBalance('DRIVER_01'),
+      builder: (context, snapshot) {
+        final balance = snapshot.data ?? 0;
+        return Container(
+          margin: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(20),
+            image: const DecorationImage(
+              image: NetworkImage('https://www.transparenttextures.com/patterns/carbon-fibre.png'),
+              opacity: 0.1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Setara: Rp 45.000', style: TextStyle(color: Colors.white, fontSize: 12)),
-              TextButton(
-                onPressed: () {},
-                style: TextButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.primary),
-                child: const Text('Cairkan Koin', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              const Text('Saldo Penghasilan Driver', style: TextStyle(color: Colors.white70, fontSize: 12)),
+              const SizedBox(height: 8),
+              Text('$balance GC', style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+              const Divider(color: Colors.white24, height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Setara: Rp ${balance * 100}', style: const TextStyle(color: Colors.white, fontSize: 12)),
+                  TextButton(
+                    onPressed: () {},
+                    style: TextButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.primary),
+                    child: const Text('Cairkan Koin', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        );
+      }
     );
   }
 
@@ -107,7 +114,9 @@ class DriverDashboard extends StatelessWidget {
                     leading: Icon(status == 'pending' ? Icons.timer_outlined : Icons.local_shipping_rounded, color: accentColor),
                     title: Text(data['partnerName'] ?? 'Mitra'),
                     subtitle: Text(data['location'] ?? ''),
-                    onTap: () => _showActionDialog(context, doc.id, data, status, driverId),
+                    onTap: status == 'completed' 
+                      ? null // Jika sudah selesai, tidak bisa diklik
+                      : () => _showActionDialog(context, doc.id, data, status, driverId),
                   ),
                 );
               },
@@ -142,8 +151,8 @@ class DriverDashboard extends StatelessWidget {
                     await FirebaseService().acceptRequest(id, driverId);
                     _openMap(data['location']);
                   } else {
-                    await FirebaseService().completeRequest(id, 5.5, 'MITRA_01');
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tugas Selesai! Koin Driver bertambah.')));
+                    await FirebaseService().completeRequest(id, 5.5, 'MITRA_01', driverId);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tugas Selesai! Koin Driver & Mitra bertambah.')));
                   }
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),

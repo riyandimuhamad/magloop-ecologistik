@@ -5,9 +5,10 @@ import '../core/config/app_config.dart';
 class FirebaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // 1. Ambil Saldo GreenCoin Mitra
-  Stream<int> getBalance() {
+  // 1. Ambil Saldo Spesifik User (Penting agar poin Driver & Mitra tidak tertukar)
+  Stream<int> getBalance(String userId) {
     return _db.collection('ledger_transactions')
+        .where('partnerId', isEqualTo: userId)
         .snapshots()
         .map((snapshot) {
           int total = 0;
@@ -18,32 +19,48 @@ class FirebaseService {
         });
   }
 
-  // 2. Buat Permintaan Penjemputan Baru
-  Future<void> createPickupRequest(String partnerName, String location) async {
-    await _db.collection('pickup_requests').add({
-      'partnerName': partnerName,
-      'location': location,
-      'status': 'pending', 
-      'timestamp': FieldValue.serverTimestamp(),
-      'coordinates': const GeoPoint(-6.175392, 106.827153), 
-    });
+  // 2. Buat Permintaan Baru (Limbah atau Pupuk)
+  Future<void> createPickupRequest(String partnerName, String location, String type) async {
+    try {
+      await _db.collection('pickup_requests').add({
+        'partnerName': partnerName,
+        'location': location,
+        'status': 'pending', 
+        'type': type, 
+        'timestamp': FieldValue.serverTimestamp(),
+        'coordinates': const GeoPoint(-6.175392, 106.827153), 
+      });
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  // 3. Driver Finish (Sampai di Peternakan)
-  Future<void> completeRequest(String requestId, double weight, String partnerId) async {
+  // 3. Driver Finish (Sampai di Lokasi)
+  Future<void> completeRequest(String requestId, double weight, String partnerId, String driverId) async {
     final coinReward = AppConfig.calculatePoints(weight);
     WriteBatch batch = _db.batch();
+    
     batch.update(_db.collection('pickup_requests').doc(requestId), {'status': 'completed'});
+    
+    // Poin untuk Mitra
     batch.set(_db.collection('ledger_transactions').doc(), {
       'partnerId': partnerId,
       'coinReward': coinReward,
-      'type': 'reward',
+      'type': 'reward_partner',
       'timestamp': FieldValue.serverTimestamp(),
     });
+
+    // Poin untuk Driver
+    batch.set(_db.collection('ledger_transactions').doc(), {
+      'partnerId': driverId,
+      'coinReward': coinReward, 
+      'type': 'reward_driver',
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
     await batch.commit();
   }
 
-  // 4. Driver Accept Request
   Future<void> acceptRequest(String requestId, String driverId) async {
     await _db.collection('pickup_requests').doc(requestId).update({
       'status': 'in_progress',
@@ -51,9 +68,9 @@ class FirebaseService {
     });
   }
 
-  // 5. Tukar Koin (Redeem)
-  Future<void> redeemCoins(int amount) async {
+  Future<void> redeemCoins(String userId, int amount) async {
     await _db.collection('ledger_transactions').add({
+      'partnerId': userId,
       'timestamp': FieldValue.serverTimestamp(),
       'coinReward': -amount,
       'type': 'redeem',
@@ -75,19 +92,13 @@ class FirebaseService {
     });
   }
 
-  // 7. Ambil Request berdasarkan Status
   Stream<QuerySnapshot> getRequestsByStatus(String status) {
     return _db.collection('pickup_requests')
         .where('status', isEqualTo: status)
         .snapshots();
   }
 
-  // 8. Mock functions untuk Logistik Screen (Mencegah Compile Error)
-  Stream<LatLng> getDriverLocation(String driverId) {
-    return Stream.value(const LatLng(-6.175392, 106.827153));
-  }
-
-  Future<void> simulateMovement(String driverId) async {
-    // Demo simulation
+  Stream<DocumentSnapshot> getDriverLocation(String driverId) {
+    return _db.collection('pickup_requests').doc('mock_id').snapshots();
   }
 }

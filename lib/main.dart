@@ -4,7 +4,7 @@ import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/role_wrapper.dart';
 
-enum AppRole { mitra, driver, admin }
+enum AppRole { mitra, driver, admin, petani }
 
 // Global State untuk Role Switching (Demo)
 final ValueNotifier<AppRole> currentUserRole = ValueNotifier<AppRole>(AppRole.mitra);

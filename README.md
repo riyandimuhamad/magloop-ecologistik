@@ -1,55 +1,79 @@
-# 🌱 Magloop Ecologistik
+# 🌿 Magloop Ecologistik - Green Logistics for Circular Economy
 
-**AI-Driven Circular Economy Platform for Organic Waste Management**
+[![Build Status](https://img.shields.io/badge/Build-Success-brightgreen)](https://github.com/riyandimuhamad/magloop-ecologistik)
+[![Flutter](https://img.shields.io/badge/Framework-Flutter%203.x-blue)](https://flutter.dev)
+[![Gemini AI](https://img.shields.io/badge/AI-Gemini%201.5%20Flash-orange)](https://ai.google.dev)
+[![Firebase](https://img.shields.io/badge/Backend-Firebase-yellow)](https://firebase.google.com)
 
-Magloop Ecologistik adalah solusi digital mutakhir yang mendigitalisasi seluruh rantai pasok pengolahan sampah organik di Indonesia. Aplikasi ini menghubungkan mitra **HOREKA** (Hotel, Restoran, Cafe) dan **Dapur Makan Bergizi Gratis (MBG)** sebagai penghasil limbah dengan unit peternak maggot BSF plasma secara transparan dan terukur.
-
-Proyek ini merupakan bagian dari ekosistem **Magloop Nusantara** yang bertujuan mentransformasi limbah sisa makanan menjadi aset ekonomi bernilai tinggi melalui teknologi AI dan biokonversi.
-
----
-
-## ✨ Fitur Utama (Vibe Coding Highlights)
-
-* 🤖 **AI Quality Control (Gemini Multimodal):** Menggunakan Gemini API untuk menganalisis foto limbah secara instan, mendeteksi kontaminasi, dan memberikan saran optimasi nutrisi pakan maggot.
-* 📍 **Real-time Logistics Tracking:** Integrasi **Firebase Cloud Firestore** untuk pelacakan armada penjemputan sampah secara *real-time* guna memastikan efisiensi rute penjemputan.
-* 📱 **QR-Code Weight Verification:** Sistem pemindaian QR-code unik pada wadah sampah untuk memverifikasi berat sampah organik, memastikan integritas data antara mitra dan driver.
-* 🪙 **GreenCoin Ledger (Blockchain-lite):** Sistem insentif transparan berbasis *append-only ledger* yang mencatat kontribusi setiap mitra dalam satuan koin digital "GreenCoin".
-* 📊 **Master Production Schedule (MPS) Dashboard:** Dashboard manajemen tugas harian yang terintegrasi bagi Driver dan Admin untuk menjaga stabilitas pasokan produksi BSF.
-
-## 👥 Multi-Role Access Control
-Aplikasi ini dirancang untuk tiga profil pengguna utama:
-1.  **Mitra (HOREKA/MBG):** Fokus pada permintaan penjemputan dan monitoring saldo GreenCoin.
-2.  **Driver (Logistik):** Fokus pada rute navigasi peta dan verifikasi setoran sampah di lapangan.
-3.  **Admin/Owner (Magloop):** Fokus pada analitik data keseluruhan, kesehatan armada, dan validasi transaksi ledger.
-
-## 🎨 Design Philosophy (Clean Vibe)
-Didesain dengan estetika **Minimalis & Profesional** yang sejalan dengan identitas brand **Dibalik Data**:
-* **Primary Color:** `Emerald Green (#10B981)` — Melambangkan keberlanjutan dan pertumbuhan.
-* **Secondary Color:** `Slate Gray (#1F2937)` — Memberikan kesan teknis dan stabilitas profesional.
-* **UI Approach:** *Clean UI* dengan tipografi **Inter** untuk keterbacaan tinggi di berbagai kondisi cahaya lapangan.
-
-## 🛠️ Tech Stack
-* **Frontend:** Flutter (Mobile & Web)
-* **AI Engine:** Google Gemini 1.5 Flash (via AI Studio)
-* **Backend & Database:** Firebase (Firestore & Auth)
-* **IDE & Vibe Tool:** Antigravity AI
-* **Deployment:** Google Cloud Run (Containerized with Docker)
-
-## 🚀 Panduan Menjalankan Proyek
-1.  Pastikan Flutter SDK sudah terinstall di sistem Anda.
-2.  Clone repositori ini.
-3.  Jalankan perintah untuk mengambil dependensi:
-    ```bash
-    flutter pub get
-    ```
-4.  Jalankan aplikasi (Pilih Chrome atau Mobile Device):
-    ```bash
-    flutter run
-    ```
+**Magloop Ecologistik** adalah platform manajemen logistik pintar yang menghubungkan sektor kuliner (HOREKA), logistik, dan pertanian melalui ekosistem **Maggot BSF**. Aplikasi ini dirancang untuk memaksimalkan nilai ekonomi sampah organik sekaligus mendigitalkan rantai pasok pupuk hayati (Kasgot).
 
 ---
 
-## 🏆 Juara Vibe Coding 2026
-Proyek ini dikembangkan oleh **Riyandi Muhammad Rizki** sebagai solusi nyata terhadap krisis manajemen limbah hilir di Indonesia, mengintegrasikan kekuatan **Data Analytics** dan **Generative AI**.
+## 🌟 Fitur Unggulan (The 4-Pillar Ecosystem)
 
-> **"Code Less, Build More, Impact Better."**
+### 1. 🤖 AI Quality Control (Mitra Penyedia Sampah)
+Mitra dapat menggunakan kamera bertenaga **Gemini AI** untuk menganalisis kualitas sampah organik secara real-time. AI akan mendeteksi kontaminasi (plastik/logam) untuk memastikan pakan maggot tetap berkualitas tinggi.
+
+### 2. 📱 Smart Logistics (Driver)
+Sistem penjemputan berbasis **QR Verification** dan integrasi **Google Maps**. Driver mendapatkan insentif koin (GreenCoin) yang setara dengan Mitra untuk setiap kilogram sampah yang berhasil dikelola.
+
+### 3. 🚜 Fertilizer Supply Chain (Mitra Petani)
+Role baru yang memungkinkan petani memesan **Pupuk Kasgot** (Bekas Maggot) langsung dari aplikasi. Menciptakan siklus sirkular dari Dapur ➡️ Magloop ➡️ Lahan Pertanian.
+
+### 4. 📊 Audit & Ledger (Admin)
+Dashboard terpusat untuk memantau sirkulasi koin, stok pupuk, dan efektivitas pengelolaan sampah di seluruh wilayah.
+
+---
+
+## 🚀 Teknologi yang Digunakan
+*   **Frontend**: Flutter (Web, Android, iOS) - Responsive & Premium UI.
+*   **Intelligence**: Google Gemini 1.5 Flash API (Multimodal Vision).
+*   **Backend**: Firebase (Cloud Firestore for real-time ledger).
+*   **DevOps**: Google Cloud Build & Cloud Run (Automated CI/CD).
+*   **Tools**: Mobile Scanner (QR), URL Launcher (Maps), Image Picker.
+
+---
+
+## 🏗️ Struktur Proyek
+```text
+lib/
+├── core/            # Theme, Config, & Global Styles
+├── features/        # Modul per Role (Mitra, Driver, Admin, Petani)
+│   ├── auth/        # Role Wrapper & Login Logic
+│   ├── mitra/       # AI QC & Waste Deposit
+│   ├── driver/      # Logistics & QR Scanner
+│   ├── petani/      # Fertilizer Ordering
+│   └── admin/       # Dashboard Audit
+├── services/        # Firebase & AI Service Integrations
+└── main.dart        # Entry point & Global State
+```
+
+---
+
+## 📈 Sistem Sirkular Ekonomi
+1.  **Input**: Mitra menyetor sampah organik (1 Kg = 10 GC).
+2.  **Logistics**: Driver menjemput & mengantar (Upah = 10 GC/Kg).
+3.  **Process**: Maggot mengubah sampah menjadi Pupuk Kasgot.
+4.  **Output**: Petani memesan pupuk untuk lahan pertanian berkelanjutan.
+
+---
+
+## 👨‍💻 Cara Instalasi (Lokal)
+1. Clone repositori:
+   ```bash
+   git clone https://github.com/riyandimuhamad/magloop-ecologistik.git
+   ```
+2. Jalankan perintah:
+   ```bash
+   cd magloop_ecologistik
+   flutter pub get
+   flutter run -d chrome
+   ```
+
+---
+
+## 📝 Lisensi
+Proyek ini dikembangkan untuk kompetisi **Juara Vibe Coding 2026**. Seluruh hak cipta dilindungi oleh tim pengembang Magloop.
+
+---
+*Dibuat dengan ❤️ untuk Bumi yang lebih hijau.*

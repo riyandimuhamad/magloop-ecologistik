@@ -4,6 +4,7 @@ import '../../main.dart';
 import '../mitra/mitra_dashboard.dart';
 import '../driver/driver_dashboard.dart';
 import '../admin/admin_dashboard.dart';
+import '../petani/petani_dashboard.dart';
 import '../mitra/mitra_history_screen.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -25,7 +26,6 @@ class _RoleWrapperState extends State<RoleWrapper> {
         List<Widget> screens = [];
         List<BottomNavigationBarItem> navItems = [];
 
-        // Halaman Profil Dinamis
         Widget profilePage = _buildDynamicProfile(role);
 
         switch (role) {
@@ -48,6 +48,13 @@ class _RoleWrapperState extends State<RoleWrapper> {
             navItems = const [
               BottomNavigationBarItem(icon: Icon(Icons.analytics_rounded), label: 'Sistem'),
               BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: 'Audit'),
+            ];
+            break;
+          case AppRole.petani:
+            screens = [const PetaniDashboard(), const MitraHistoryScreen(), profilePage];
+            navItems = const [
+              BottomNavigationBarItem(icon: Icon(Icons.eco_rounded), label: 'Pupuk'),
+              BottomNavigationBarItem(icon: Icon(Icons.history_rounded), label: 'Riwayat'),
             ];
             break;
         }
@@ -80,27 +87,15 @@ class _RoleWrapperState extends State<RoleWrapper> {
     if (role == AppRole.mitra) {
       title = "Restoran Sedap";
       subtitle = "Mitra ID: MITRA_01";
-      identityWidget = Column(
-        children: [
-          const Text('QR Penjemputan Mitra:', style: TextStyle(fontSize: 12, color: Colors.grey)),
-          const SizedBox(height: 16),
-          QrImageView(data: 'MITRA_01', size: 180.0, version: QrVersions.auto),
-        ],
-      );
+      identityWidget = QrImageView(data: 'MITRA_01', size: 180.0, version: QrVersions.auto);
+    } else if (role == AppRole.petani) {
+      title = "Kebun Berkah";
+      subtitle = "Petani ID: PETANI_01";
+      identityWidget = QrImageView(data: 'PETANI_01', size: 180.0, version: QrVersions.auto);
     } else if (role == AppRole.driver) {
       title = "Budi Sudarsono";
       subtitle = "Driver ID: DRIVER_01";
-      identityWidget = Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(16)),
-        child: const Column(
-          children: [
-            Icon(Icons.verified_user_rounded, color: Colors.blue, size: 48),
-            SizedBox(height: 12),
-            Text('DRIVER TERVERIFIKASI', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-          ],
-        ),
-      );
+      identityWidget = const Icon(Icons.verified_user_rounded, color: Colors.blue, size: 80);
     } else {
       title = "Admin Magloop";
       subtitle = "Control Center Access";
@@ -114,7 +109,7 @@ class _RoleWrapperState extends State<RoleWrapper> {
         child: Column(
           children: [
             ListTile(
-              leading: CircleAvatar(backgroundColor: AppColors.primary, child: Icon(role == AppRole.driver ? Icons.person : Icons.store, color: Colors.white)),
+              leading: CircleAvatar(backgroundColor: AppColors.primary, child: Icon(role == AppRole.petani ? Icons.eco : Icons.person, color: Colors.white)),
               title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
               subtitle: Text(subtitle),
             ),

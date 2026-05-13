@@ -18,38 +18,110 @@ class MitraDashboard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(context),
-            const SizedBox(height: 24),
-            _buildBalanceCard(context),
+            const SizedBox(height: 32),
+            _buildWalletCard(context),
             const SizedBox(height: 32),
             _buildActionSection(context),
             const SizedBox(height: 16),
-            _buildFarmerSection(context),
-            const SizedBox(height: 16),
             _buildAIActionSection(context),
             const SizedBox(height: 32),
-            _buildRoleSwitcher(context), 
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFarmerSection(BuildContext context) {
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Halo, Restoran Sedap!', style: Theme.of(context).textTheme.titleLarge),
+            const Text('Ayo setor sampah organik hari ini.'),
+          ],
+        ),
+        const CircleAvatar(
+          backgroundColor: AppColors.primarySurface,
+          child: Icon(Icons.store_rounded, color: AppColors.primary),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWalletCard(BuildContext context) {
+    return StreamBuilder<int>(
+      stream: FirebaseService().getBalance('MITRA_01'),
+      builder: (context, snapshot) {
+        final balance = snapshot.data ?? 0;
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(24),
+            image: const DecorationImage(
+              image: NetworkImage('https://www.transparenttextures.com/patterns/carbon-fibre.png'),
+              opacity: 0.1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Saldo GreenCoin', style: TextStyle(color: Colors.white70, fontSize: 14)),
+              const SizedBox(height: 8),
+              Text('$balance GC', style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+              const Divider(color: Colors.white24, height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Setara: Rp ${AppConfig.calculateRupiah(balance)}', style: const TextStyle(color: Colors.white, fontSize: 14)),
+                  TextButton(
+                    onPressed: () => FirebaseService().redeemCoins('MITRA_01', balance),
+                    style: TextButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.primary),
+                    child: const Text('Tukar Koin', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      }
+    );
+  }
+
+  Widget _buildActionSection(BuildContext context) {
     return InkWell(
       onTap: () {
+        // 1. Jalankan proses simpan di latar belakang (Background)
+        FirebaseService().createPickupRequest('Restoran Sedap', 'Jl. Sudirman No. 12', 'waste');
+        
+        // 2. Langsung tampilkan Dialog Sukses detik itu juga!
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Tukar Pupuk Kasgot'),
-            content: const Text('Tukarkan 50 GreenCoins dengan 5 Kg Pupuk Organik Kasgot (Hasil Sirkular Magloop).'),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            backgroundColor: Colors.white,
+            title: const Column(
+              children: [
+                Icon(Icons.check_circle, color: AppColors.primary, size: 64),
+                SizedBox(height: 16),
+                Text('BERHASIL!', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+              ],
+            ),
+            content: const Text(
+              'Permintaan penjemputan sampah Anda telah berhasil dikirim ke sistem Magloop.',
+              textAlign: TextAlign.center,
+            ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pesanan Pupuk Berhasil! Akan dikirim bersama jadwal penjemputan berikutnya.')));
-                },
-                child: const Text('Tukar Sekarang'),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                  child: const Text('OK, SIAP!'),
+                ),
               ),
             ],
           ),
@@ -60,24 +132,24 @@ class MitraDashboard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
         decoration: BoxDecoration(
-          color: Colors.orange[50],
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+          border: Border.all(color: AppColors.border),
         ),
-        child: Row(
+        child: const Row(
           children: [
-            const Icon(Icons.eco, color: Colors.orange, size: 32),
-            const SizedBox(width: 16),
-            const Expanded(
+            Icon(Icons.delete_sweep_rounded, color: AppColors.primary, size: 32),
+            SizedBox(width: 16),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Mitra Peternak/Petani', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  Text('Tukar koin dengan Pupuk Kasgot (Sirkular)', style: TextStyle(color: Colors.orange, fontSize: 12)),
+                  Text('Setor Sampah', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text('Panggil driver untuk menjemput limbah.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.orange),
+            Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppColors.textTertiary),
           ],
         ),
       ),
@@ -94,194 +166,26 @@ class MitraDashboard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
         decoration: BoxDecoration(
-          color: const Color(0xFFF0FDF4),
+          color: AppColors.primarySurface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
         ),
-        child: Row(
+        child: const Row(
           children: [
-            const Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 32),
-            const SizedBox(width: 16),
+            Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 32),
+            SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('AI Quality Control', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  Text('Deteksi kontaminasi pakan via Gemini AI', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                  Text('AI Quality Control', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text('Cek kebersihan pakan maggot dengan AI.', style: TextStyle(color: AppColors.primaryDark, fontSize: 12)),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppColors.primary),
+            Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppColors.primary),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Halo, Mitra Magloop!', style: Theme.of(context).textTheme.titleLarge),
-        Text('Ayo jaga ekosistem dapur hari ini.', style: Theme.of(context).textTheme.bodyMedium),
-      ],
-    );
-  }
-
-  Widget _buildBalanceCard(BuildContext context) {
-    return StreamBuilder<int>(
-      stream: FirebaseService().getBalance(),
-      builder: (context, snapshot) {
-        final balance = snapshot.data ?? 0;
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(24),
-            gradient: const LinearGradient(
-              colors: [AppColors.primary, Color(0xFF065F46)],
-              begin: Alignment.topLeft, end: Alignment.bottomRight,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Saldo GreenCoin', style: TextStyle(color: Colors.white70)),
-              const SizedBox(height: 8),
-              Text('$balance GC', 
-                style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
-              const Divider(color: Colors.white24, height: 32),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Setara: Rp ${AppConfig.calculateRupiah(balance)}', 
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
-                  ElevatedButton(
-                    onPressed: () => _showRedeemDialog(context, balance),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Tukar Koin', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showRedeemDialog(BuildContext context, int currentBalance) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Pilih Voucher Penukaran', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            _buildRedeemItem(context, 'Voucher Sembako Rp 10rb', 100, currentBalance),
-            _buildRedeemItem(context, 'Voucher Listrik Rp 20rb', 200, currentBalance),
-            _buildRedeemItem(context, 'Saldo Digital Rp 50rb', 500, currentBalance),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRedeemItem(BuildContext context, String title, int cost, int balance) {
-    final bool canAfford = balance >= cost;
-    return ListTile(
-      leading: const Icon(Icons.redeem_rounded, color: Colors.orange),
-      title: Text(title),
-      subtitle: Text('$cost GreenCoins'),
-      trailing: ElevatedButton(
-        onPressed: canAfford ? () async {
-          await FirebaseService().redeemCoins(cost);
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Penukaran Berhasil!')));
-        } : null,
-        child: const Text('Tukar'),
-      ),
-    );
-  }
-
-  Widget _buildActionSection(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        // Tampilkan feedback instan
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-                SizedBox(width: 16),
-                Text('Mengirim permintaan...'),
-              ],
-            ),
-            duration: Duration(seconds: 1),
-          ),
-        );
-
-        // Kirim ke Firebase di background (tanpa await yang menghambat UI)
-        FirebaseService().createPickupRequest('Restoran Sedap', 'Jl. Merdeka No. 10').then((_) {
-          if (context.mounted) {
-            showDialog(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                title: const Icon(Icons.check_circle_outline, color: AppColors.primary, size: 60),
-                content: const Text('Berhasil! Permintaan Anda sudah masuk antrian.', textAlign: TextAlign.center),
-                actions: [Center(child: TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Oke')))],
-              ),
-            );
-          }
-        });
-      },
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 40),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.primary, width: 2),
-        ),
-        child: Column(
-          children: [
-            const Icon(Icons.add_location_alt_rounded, size: 48, color: AppColors.primary),
-            const SizedBox(height: 16),
-            Text('Setor Sampah', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.primary)),
-            const Text('Request driver menjemput sekarang'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRoleSwitcher(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(12)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Text('Ganti Role (Demo Mode):'),
-          DropdownButton<AppRole>(
-            value: currentUserRole.value,
-            items: AppRole.values.map((e) => DropdownMenuItem(value: e, child: Text(e.name))).toList(),
-            onChanged: (val) {
-              if (val != null) currentUserRole.value = val;
-            },
-          ),
-        ],
       ),
     );
   }
