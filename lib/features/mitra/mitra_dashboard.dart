@@ -66,7 +66,7 @@ class MitraDashboard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.grass_rounded, color: Colors.orange, size: 32),
+            const Icon(Icons.eco, color: Colors.orange, size: 32),
             const SizedBox(width: 16),
             const Expanded(
               child: Column(
