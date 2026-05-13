@@ -23,9 +23,61 @@ class MitraDashboard extends StatelessWidget {
             const SizedBox(height: 32),
             _buildActionSection(context),
             const SizedBox(height: 16),
+            _buildFarmerSection(context),
+            const SizedBox(height: 16),
             _buildAIActionSection(context),
             const SizedBox(height: 32),
             _buildRoleSwitcher(context), 
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFarmerSection(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Tukar Pupuk Kasgot'),
+            content: const Text('Tukarkan 50 GreenCoins dengan 5 Kg Pupuk Organik Kasgot (Hasil Sirkular Magloop).'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pesanan Pupuk Berhasil! Akan dikirim bersama jadwal penjemputan berikutnya.')));
+                },
+                child: const Text('Tukar Sekarang'),
+              ),
+            ],
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+        decoration: BoxDecoration(
+          color: Colors.orange[50],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.Grass_rounded, color: Colors.orange, size: 32),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Mitra Peternak/Petani', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text('Tukar koin dengan Pupuk Kasgot (Sirkular)', style: TextStyle(color: Colors.orange, fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.orange),
           ],
         ),
       ),

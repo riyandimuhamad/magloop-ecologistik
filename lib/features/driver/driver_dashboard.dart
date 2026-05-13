@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/firebase_service.dart';
+import '../schedule/screens/scanner_screen.dart';
 
 class DriverDashboard extends StatelessWidget {
   const DriverDashboard({super.key});
@@ -26,13 +27,55 @@ class DriverDashboard extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Driver Magloop')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const VerificationScanner())),
+        backgroundColor: AppColors.primary,
+        icon: const Icon(Icons.qr_code_scanner_rounded),
+        label: const Text('Scan QR Verification'),
+      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
+            _buildDriverWallet(),
             _buildSection(context, 'TUGAS BARU', 'pending', driverId, Colors.orange),
             _buildSection(context, 'SEDANG BERJALAN', 'in_progress', driverId, AppColors.primary),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDriverWallet() {
+    return Container(
+      margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(20),
+        image: const DecorationImage(
+          image: NetworkImage('https://www.transparenttextures.com/patterns/carbon-fibre.png'),
+          opacity: 0.1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Saldo Penghasilan Driver', style: TextStyle(color: Colors.white70, fontSize: 12)),
+          const SizedBox(height: 8),
+          const Text('450 GC', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+          const Divider(color: Colors.white24, height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Setara: Rp 45.000', style: TextStyle(color: Colors.white, fontSize: 12)),
+              TextButton(
+                onPressed: () {},
+                style: TextButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.primary),
+                child: const Text('Cairkan Koin', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -43,13 +86,13 @@ class DriverDashboard extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-          child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: accentColor)),
+          child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: accentColor, fontSize: 12)),
         ),
         StreamBuilder<QuerySnapshot>(
           stream: FirebaseService().getRequestsByStatus(status),
           builder: (context, snapshot) {
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return const Padding(padding: EdgeInsets.all(20), child: Text('Tidak ada data'));
+              return const Padding(padding: EdgeInsets.all(20), child: Text('Tidak ada tugas', style: TextStyle(color: Colors.grey)));
             }
             return ListView.builder(
               shrinkWrap: true,
@@ -58,7 +101,15 @@ class DriverDashboard extends StatelessWidget {
               itemBuilder: (context, index) {
                 final doc = snapshot.data!.docs[index];
                 final data = doc.data() as Map<String, dynamic>;
-                return _buildRequestCard(context, doc.id, data, status, driverId);
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: ListTile(
+                    leading: Icon(status == 'pending' ? Icons.timer_outlined : Icons.local_shipping_rounded, color: accentColor),
+                    title: Text(data['partnerName'] ?? 'Mitra'),
+                    subtitle: Text(data['location'] ?? ''),
+                    onTap: () => _showActionDialog(context, doc.id, data, status, driverId),
+                  ),
+                );
               },
             );
           },
@@ -67,53 +118,32 @@ class DriverDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildRequestCard(BuildContext context, String id, Map<String, dynamic> data, String status, String driverId) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: ListTile(
-        leading: Icon(status == 'pending' ? Icons.timer_outlined : Icons.local_shipping_rounded),
-        title: Text(data['partnerName'] ?? 'Mitra'),
-        subtitle: Text(data['location'] ?? ''),
-        onTap: () => _showActionDialog(context, id, data, status, driverId),
-      ),
-    );
-  }
-
   void _showActionDialog(BuildContext context, String id, Map<String, dynamic> data, String status, String driverId) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Detail Penjemputan', style: Theme.of(context).textTheme.titleLarge),
+            const Text('Detail Tugas', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            ListTile(leading: const Icon(Icons.store), title: Text(data['partnerName'])),
+            ListTile(leading: const Icon(Icons.pin_drop), title: Text(data['location'])),
             const SizedBox(height: 24),
-            _buildInfoRow(Icons.store, 'Mitra', data['partnerName']),
-            _buildInfoRow(Icons.pin_drop, 'Alamat', data['location']),
-            const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
                 onPressed: () async {
-                  // TUTUP POPUP SEGERA
-                  Navigator.of(ctx).pop();
-                  
-                  final scaffoldMessenger = ScaffoldMessenger.of(context);
-
+                  Navigator.pop(ctx);
                   if (status == 'pending') {
                     await FirebaseService().acceptRequest(id, driverId);
                     _openMap(data['location']);
-                    scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Order Diterima. Membuka Maps...')));
                   } else {
                     await FirebaseService().completeRequest(id, 5.5, 'MITRA_01');
-                    scaffoldMessenger.showSnackBar(
-                      const SnackBar(content: Text('Tugas Selesai! Data Terkirim.'), backgroundColor: AppColors.primary)
-                    );
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tugas Selesai! Koin Driver bertambah.')));
                   }
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
@@ -122,20 +152,6 @@ class DriverDashboard extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.primary, size: 20),
-          const SizedBox(width: 12),
-          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
-          Expanded(child: Text(value)),
-        ],
       ),
     );
   }
