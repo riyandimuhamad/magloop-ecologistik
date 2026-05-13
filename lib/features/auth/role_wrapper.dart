@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../main.dart';
 import '../mitra/mitra_dashboard.dart';
 import '../driver/driver_dashboard.dart';
@@ -24,19 +25,37 @@ class _RoleWrapperState extends State<RoleWrapper> {
         List<Widget> screens = [];
         List<BottomNavigationBarItem> navItems = [];
 
-        // Widget Placeholder Profil yang berisi Role Switcher
-        Widget profilePlaceholder = Scaffold(
+        // Halaman Profil yang berisi Identitas QR Mitra
+        Widget profilePage = Scaffold(
           appBar: AppBar(title: const Text('Profil Saya')),
-          body: Padding(
-            padding: const EdgeInsets.all(20.0),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
             child: Column(
               children: [
                 const ListTile(
-                  leading: CircleAvatar(child: Icon(Icons.person)),
-                  title: Text('User Magloop'),
+                  leading: CircleAvatar(backgroundColor: AppColors.primary, child: Icon(Icons.store, color: Colors.white)),
+                  title: Text('Restoran Sedap (Mitra ID: MITRA_01)', style: TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('Status: Terverifikasi'),
                 ),
-                const Divider(),
+                const SizedBox(height: 32),
+                const Text('Tunjukkan QR ini ke Driver saat penjemputan:', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                const SizedBox(height: 16),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                    ),
+                    child: QrImageView(
+                      data: 'MITRA_01',
+                      version: QrVersions.auto,
+                      size: 200.0,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
                 _buildRoleSwitcherForProfile(),
               ],
             ),
@@ -45,33 +64,21 @@ class _RoleWrapperState extends State<RoleWrapper> {
 
         switch (role) {
           case AppRole.mitra:
-            screens = [
-              const MitraDashboard(), 
-              const MitraHistoryScreen(),
-              profilePlaceholder
-            ];
+            screens = [const MitraDashboard(), const MitraHistoryScreen(), profilePage];
             navItems = const [
               BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Dashboard'),
               BottomNavigationBarItem(icon: Icon(Icons.history_rounded), label: 'Riwayat'),
             ];
             break;
           case AppRole.driver:
-            screens = [
-              const DriverDashboard(), 
-              const Scaffold(body: Center(child: Text('Rute Pengiriman'))),
-              profilePlaceholder
-            ];
+            screens = [const DriverDashboard(), const Scaffold(body: Center(child: Text('Map Rute'))), profilePage];
             navItems = const [
               BottomNavigationBarItem(icon: Icon(Icons.delivery_dining_rounded), label: 'Jadwal'),
               BottomNavigationBarItem(icon: Icon(Icons.map_rounded), label: 'Rute'),
             ];
             break;
           case AppRole.admin:
-            screens = [
-              const AdminDashboard(), 
-              const Scaffold(body: Center(child: Text('Ledger Transaksi'))),
-              profilePlaceholder
-            ];
+            screens = [const AdminDashboard(), const Scaffold(body: Center(child: Text('Settings'))), profilePage];
             navItems = const [
               BottomNavigationBarItem(icon: Icon(Icons.analytics_rounded), label: 'Analitik'),
               BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: 'Ledger'),
@@ -94,10 +101,7 @@ class _RoleWrapperState extends State<RoleWrapper> {
             type: BottomNavigationBarType.fixed,
             items: [
               ...navItems,
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline_rounded),
-                label: 'Profil',
-              ),
+              const BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profil'),
             ],
           ),
         );
@@ -112,8 +116,7 @@ class _RoleWrapperState extends State<RoleWrapper> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Switch Role (Demo):', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          const Text('Switch Role (Demo Mode):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
           DropdownButton<AppRole>(
             isExpanded: true,
             value: currentUserRole.value,
@@ -121,7 +124,7 @@ class _RoleWrapperState extends State<RoleWrapper> {
             onChanged: (val) {
               if (val != null) {
                 currentUserRole.value = val;
-                setState(() => _currentIndex = 0); // Balik ke Home tiap ganti role
+                setState(() => _currentIndex = 0);
               }
             },
           ),

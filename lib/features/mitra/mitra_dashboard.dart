@@ -3,6 +3,7 @@ import '../../core/theme/app_theme.dart';
 import '../../services/firebase_service.dart';
 import '../../main.dart';
 import '../../core/config/app_config.dart';
+import './ai_qc_page.dart';
 
 class MitraDashboard extends StatelessWidget {
   const MitraDashboard({super.key});
@@ -34,9 +35,7 @@ class MitraDashboard extends StatelessWidget {
   Widget _buildAIActionSection(BuildContext context) {
     return InkWell(
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Membuka Gemini AI Camera... (Fitur AI QC Aktif)'))
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (c) => const AIQCPage()));
       },
       borderRadius: BorderRadius.circular(20),
       child: Container(
