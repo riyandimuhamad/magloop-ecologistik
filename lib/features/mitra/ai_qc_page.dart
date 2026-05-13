@@ -131,7 +131,7 @@ class _AIQCPageState extends State<AIQCPage> {
             children: [
               const Icon(Icons.auto_awesome, color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
-              Text('HASIL ANALISIS GEMINI', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary[900], fontSize: 12)),
+              const Text('HASIL ANALISIS GEMINI', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark, fontSize: 12)),
             ],
           ),
           const Divider(height: 24),
